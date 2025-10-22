@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "Create order with valid data",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "customerName": "John Doe",
+        "customerPhone": "+1234567890",
+        "customerEmail": "john@example.com",
+        "items": [
+          {
+            "id": "1",
+            "name": "Caesar Salad",
+            "price": 12.99,
+            "quantity": 2
+          }
+        ]
+      },
+      "expectedStatus": 201
+    }
+  ]
+}

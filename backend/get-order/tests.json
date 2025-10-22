@@ -1,0 +1,16 @@
+{
+  "tests": [
+    {
+      "name": "Get order by ID",
+      "method": "GET",
+      "path": "/?orderId=1",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Missing order ID",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
@@ -6,71 +6,41 @@ import DishCard from '@/components/DishCard';
 import CartDrawer from '@/components/CartDrawer';
 import { Dish, CartItem } from '@/types/restaurant';
 import { useToast } from '@/hooks/use-toast';
-
-const MOCK_DISHES: Dish[] = [
-  {
-    id: '1',
-    name: 'Caesar Salad',
-    description: 'Fresh romaine lettuce with parmesan, croutons and Caesar dressing',
-    price: 12.99,
-    oldPrice: 15.99,
-    image: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?w=400&h=400&fit=crop',
-    category: 'Salads'
-  },
-  {
-    id: '2',
-    name: 'Margherita Pizza',
-    description: 'Classic Italian pizza with tomato, mozzarella and fresh basil',
-    price: 18.99,
-    image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=400&h=400&fit=crop',
-    category: 'Main Courses'
-  },
-  {
-    id: '3',
-    name: 'Grilled Salmon',
-    description: 'Premium salmon fillet with vegetables and lemon butter sauce',
-    price: 24.99,
-    image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=400&fit=crop',
-    category: 'Main Courses'
-  },
-  {
-    id: '4',
-    name: 'Chocolate Lava Cake',
-    description: 'Warm chocolate cake with molten center and vanilla ice cream',
-    price: 8.99,
-    image: 'https://images.unsplash.com/photo-1624353365286-3f8d62daad51?w=400&h=400&fit=crop',
-    category: 'Desserts'
-  },
-  {
-    id: '5',
-    name: 'Greek Salad',
-    description: 'Tomatoes, cucumbers, olives, feta cheese with olive oil',
-    price: 11.99,
-    image: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=400&fit=crop',
-    category: 'Salads'
-  },
-  {
-    id: '6',
-    name: 'Beef Burger',
-    description: 'Juicy beef patty with cheese, lettuce, tomato and special sauce',
-    price: 16.99,
-    oldPrice: 19.99,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&h=400&fit=crop',
-    category: 'Main Courses'
-  }
-];
+import { api } from '@/services/api';
 
 const Index = () => {
+  const [dishes, setDishes] = useState<Dish[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const categories = ['All', ...Array.from(new Set(MOCK_DISHES.map(d => d.category)))];
+  useEffect(() => {
+    loadDishes();
+  }, []);
+
+  const loadDishes = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getMenu();
+      setDishes(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load menu',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = ['All', ...Array.from(new Set(dishes.map(d => d.category)))];
 
   const filteredDishes = selectedCategory === 'All' 
-    ? MOCK_DISHES 
-    : MOCK_DISHES.filter(d => d.category === selectedCategory);
+    ? dishes 
+    : dishes.filter(d => d.category === selectedCategory);
 
   const handleAddToCart = (dish: Dish) => {
     setCartItems(prev => {
@@ -101,12 +71,36 @@ const Index = () => {
     }
   };
 
-  const handleCheckout = () => {
-    setIsCartOpen(false);
-    toast({
-      title: 'Checkout',
-      description: 'Redirecting to payment...',
-    });
+  const handleCheckout = async () => {
+    try {
+      const orderData = {
+        customerName: 'Guest User',
+        customerPhone: '+1234567890',
+        customerEmail: 'guest@restaurant.com',
+        items: cartItems.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
+      };
+
+      const result = await api.createOrder(orderData);
+      
+      setCartItems([]);
+      setIsCartOpen(false);
+      
+      toast({
+        title: 'Order placed!',
+        description: `Order #${result.orderId} created successfully`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create order',
+        variant: 'destructive',
+      });
+    }
   };
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -159,15 +153,21 @@ const Index = () => {
           </TabsList>
         </Tabs>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-          {filteredDishes.map(dish => (
-            <DishCard 
-              key={dish.id} 
-              dish={dish} 
-              onAddToCart={handleAddToCart}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#FF6B6B]"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+            {filteredDishes.map(dish => (
+              <DishCard 
+                key={dish.id} 
+                dish={dish} 
+                onAddToCart={handleAddToCart}
+              />
+            ))}
+          </div>
+        )}
       </main>
 
       <CartDrawer 

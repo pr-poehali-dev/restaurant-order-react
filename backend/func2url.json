@@ -1,0 +1,5 @@
+{
+  "get-menu": "https://functions.poehali.dev/9f6e51f9-0e03-4a02-be62-73cc026c8c6e",
+  "create-order": "https://functions.poehali.dev/1add3bb7-0b10-47d4-9cc9-0dc3c8040250",
+  "get-order": "https://functions.poehali.dev/1018dbd4-c305-4042-8dfa-c3b9d7f36aad"
+}
